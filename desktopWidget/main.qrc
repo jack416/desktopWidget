@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/">
+        <file>json/common.json</file>
+        <file>json/monitor.json</file>
+        <file>json/worldmap.json</file>
+        <file>images/main_icon.png</file>
+        <file>images/world_map.png</file>
+    </qresource>
+</RCC>

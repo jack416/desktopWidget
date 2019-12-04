@@ -1,0 +1,31 @@
+{
+ 	"monitor": [
+		{
+			"title": "cpu", "name": "cpu"
+		},
+		{
+			"title": "mem", "name": "mem"
+		},
+		{
+			"title": "t°", "name": "temp", "arg": "hwmon2/temp1",
+			"sub": [
+				{ "title": "CPU:", "arg": "hwmon2/temp1" },
+				{ "title": "MB:",  "arg": "hwmon0/temp1" },
+				{ "title": "HDD:", "arg": "hddtemp -n /dev/sda" },
+				{ "title": "GPU:", "arg": "hwmon1/temp1" }
+			]
+		},
+		{
+			"title": "/", "name": "fs", "arg": "/"
+		},
+		{
+			"title": "home", "name": "fs", "arg": "/home"
+		},
+		{
+			"title": "down", "name": "down", "arg": "wlp1s0", "max": 4000
+		},
+		{
+			"title": "up", "name": "up", "arg": "wlp1s0", "max": 4000
+		}
+	]
+}

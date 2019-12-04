@@ -1,0 +1,58 @@
+{
+	"api_key": "API_KEY_FOR_api.ipapi.com",
+	"update_current_secs": 3600,
+	"font_face": "Monospace",
+	"box": {
+		"left": 8.0, "right": 8.0, "mid": 5.0,
+		"color": [6, 10, 9, 110],
+		"border_color": [64, 186, 162, 178], "border_width": 0.9, "bot_radius": 7.0,
+		"bullet_cx": 5.0, "bullet_cy": 16.0, 
+		"caption": { "color": [221, 221, 221, 204], "font_size": 8.0, "font_weight": 0.5, "cx": 5.0 },
+		"value": { "color": [34, 178, 149, 204], "font_size": 8.0, "font_weight": 0.5, "cx": -20.0 }
+	},
+	"gauge": {
+		"padding": 3.4, "ext_radius": 30.0,
+		"ext_border_color": [1, 210, 169, 178], "ext_border_width": 1.8,
+		"radius": 26.0, "thickness": 8.0, "start_angle": 35, "thick_angle": 5, "mid_angle": 2,
+		"bg_color": [11, 65, 54, 128], "color": [1, 210, 169, 204],
+		"title": {
+			"color": [0, 0, 0, 230], "font_size": 8.0, "font_weight": 0.7,
+			"bg_color": [34, 153, 126, 250], "border_color": [0, 196, 152, 250], "border_width": 1.1,
+			"radius": 17.0
+		}	
+	},
+	"shadow": {
+		"color": [0, 0, 0, 179], "cx": 1.6, "cy": 1.6
+	},
+	"bullet": {
+ 		"ext_radius": 4.6, "ext_border_width": 1.0, "radius": 2.3,
+ 		"color": [1, 210, 169, 179]
+ 	},
+ 	"graph": {
+ 		"bg_color": [34, 34, 34, 45], "border_color": [64, 186, 162, 102], "border_width": 0.6,
+ 		"border_radius": 4.5, "color1":[34, 178, 149, 240], "color2": [255, 255, 255, 240],
+ 		"watermark": { "font_size": 10.0, "font_weight": 0.6, "color": [170, 179, 170, 50] }
+ 	},
+ 	"bg": {
+		"img": "", "x": -16.0, "y": -166.0, "width": 1800.0
+	},
+	"city": {
+		"color": [204, 221, 255, 235], "font_size": 8.0, "font_weight": 0.62,
+		"dot_color": [255, 116, 0, 242], "dot_radius": 3.0, "border_color": [0, 0, 0, 250], "dot_border": 2.5,
+		"hide_caption_dot_color": [255, 204, 0, 242], "hide_caption_dot_radius": 2.5
+	},
+	"current": {
+		"color": [255, 255, 255, 240], "font_size": 9.2, "font_weight": 0.66,
+		"dot_color": [255, 0, 0, 235], "alt_color": [255, 255, 255, 235], 
+		"dot_radius": 4.2, "dot_border": 2.5, "border_color": [0, 0, 0, 250]
+	},
+	"info": {
+		"color": [170, 170, 170, 140], "font_size": 7.8, "font_weight": 0.4
+	},
+	"line": {
+		"color": [255, 255, 255, 77], "width": 0.5
+	},
+	"time_line": {
+		"color": [255, 255, 255, 77], "width": 0.5
+	}
+}
