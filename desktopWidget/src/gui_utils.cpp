@@ -122,19 +122,14 @@ QWidget *mainWindowWidget()
     return nullptr;
 }
 //==============================================================================
-void showAboutDialog(const QString &developer)
+void showAboutDialog(const QString &developer, QWidget *parent)
 {
-    QWidget *mainWidget = mainWindowWidget();
+    QDialog *dialogAbout {nullptr};
 
-    if(!mainWidget)
-        return;
+    if(parent) dialogAbout = parent->findChild<QDialog*>("dialogAbout");
+    if(dialogAbout) return;
 
-    QDialog *dialogAbout = mainWidget->findChild<QDialog*>("dialogAbout");
-
-    if(dialogAbout)
-        return;
-
-    dialogAbout = new QDialog(mainWidget);
+    dialogAbout = new QDialog(parent);
     dialogAbout->setObjectName("dialogAbout");
     dialogAbout->setAttribute(Qt::WA_DeleteOnClose);
     dialogAbout->setWindowTitle( dialogAbout->tr("О программе") );

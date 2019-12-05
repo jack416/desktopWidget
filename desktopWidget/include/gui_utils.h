@@ -43,7 +43,7 @@ void messageInfo(const QString &text);
 bool messageConfirm(const QString &text);
 int messageDialog(const QString &text);
 QWidget *mainWindowWidget();
-void showAboutDialog(const QString &developer = QString());
+void showAboutDialog(const QString &developer = QString(), QWidget *parent = nullptr);
 
 } // namespace gui_utils =======================================================
 #endif // GUI_UTILS_H

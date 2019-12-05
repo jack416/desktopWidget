@@ -9,10 +9,19 @@ include( common.pri )
 # Sources and Headers ==========================================================
 
 SOURCES += \
-    main.cpp
+    canvas.cpp \
+    common.cpp \
+    customscene.cpp \
+    main.cpp \
+    monitorobject.cpp \
+    settings.cpp
 
 HEADERS += \
-    common.h
+    canvas.h \
+    common.h \
+    customscene.h \
+    monitorobject.h \
+    settings.h
 
 # Output dir ===================================================================
 

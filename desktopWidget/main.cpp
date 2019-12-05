@@ -1,6 +1,6 @@
 #include <QApplication>
 #include "AppCore"
-
+#include "canvas.h"
 //==================================================================================================
 int main(int argc, char *argv[])
 {
@@ -12,6 +12,8 @@ int main(int argc, char *argv[])
         return 0;
     }
 
+    Canvas canvas;
+    canvas.show();
 
     a.setQuitOnLastWindowClosed(true);
     return a.exec();
