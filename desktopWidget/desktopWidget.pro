@@ -11,17 +11,21 @@ include( common.pri )
 SOURCES += \
     canvas.cpp \
     common.cpp \
+    currentlocationobject.cpp \
     customscene.cpp \
     main.cpp \
     monitorobject.cpp \
-    settings.cpp
+    settings.cpp \
+    worldmapobject.cpp
 
 HEADERS += \
     canvas.h \
     common.h \
+    currentlocationobject.h \
     customscene.h \
     monitorobject.h \
-    settings.h
+    settings.h \
+    worldmapobject.h
 
 # Output dir ===================================================================
 

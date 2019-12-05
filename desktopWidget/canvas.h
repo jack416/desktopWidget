@@ -21,6 +21,7 @@ public:
 
 signals:
     void toLog(const QString &text, nayk::Log::LogType logType = nayk::Log::LogInfo);
+    void quit();
 
 private:
     nayk::Log *m_log {nullptr};
@@ -39,6 +40,7 @@ private slots:
     void on_actionAboutTriggered();
     void on_actionOpenMapTriggered();
     void on_sceneRightClick(const QPoint &screenPos, const QPointF &scenePos);
+    void on_currentLocationChanged(const CurrentLocationStruct &currentLocation);
 
 };
 //==============================================================================

@@ -5,7 +5,6 @@
 #include "AppCore"
 #include "FileSys"
 #include "Convert"
-#include "NetworkClient"
 #include "Geo"
 #include "Graph"
 #include "SystemUtils"
@@ -13,6 +12,9 @@
 //
 #include "canvas.h"
 #include "monitorobject.h"
+#include "worldmapobject.h"
+#include "currentlocationobject.h"
+
 //==============================================================================
 
 using namespace nayk;
@@ -70,7 +72,7 @@ void Canvas::setupMenu()
     m_menu.addAction( tr("Reload settings"), m_settings, &Settings::reloadSettings );
     m_menu.addAction( tr("About"), this, &Canvas::on_actionAboutTriggered );
     m_menu.addSeparator();
-    m_menu.addAction( tr("Exit"), this, &Canvas::close );
+    m_menu.addAction( tr("Exit"), this, &Canvas::quit );
 }
 //==============================================================================
 bool Canvas::eventFilter(QObject *obj, QEvent *event)
@@ -108,17 +110,44 @@ void Canvas::on_settingsFinishReading()
 {
     emit toLog(tr("Canvas slot on_settingsFinishReading()"), Log::LogDbg);
 
+    m_log->setDebugSave(m_settings->debug());
     m_scene->clear();
     setFixedSize( m_settings->screenGeometry().width(),
                   m_settings->screenGeometry().height() );
     setGeometry( m_settings->screenGeometry() );
     m_scene->setSceneRect( 0, 0, geometry().width(), geometry().height() );
 
-    MonitorObject *obj = new MonitorObject(m_settings);
-    obj->setObjectName("monitorObject");
-    obj->setPos( 0, static_cast<qreal>(geometry().height())
+    WorldMapObject *worldMapObject = new WorldMapObject(m_settings);
+    worldMapObject->setObjectName("worldMapObject");
+    worldMapObject->setPos(0, 0);
+    worldMapObject->setZValue(0);
+    m_scene->addItem(worldMapObject);
+
+    connect(worldMapObject, &WorldMapObject::toLog,
+            m_log, &Log::saveToLog, Qt::QueuedConnection);
+
+    CurrentLocationObject *currentLocationObject = new CurrentLocationObject(m_settings);
+    currentLocationObject->setObjectName("currentLocationObject");
+    currentLocationObject->setPos(m_settings->currentLocation().point);
+    currentLocationObject->setZValue(1);
+    m_scene->addItem(currentLocationObject);
+
+    connect(currentLocationObject, &CurrentLocationObject::toLog,
+            m_log, &Log::saveToLog, Qt::QueuedConnection);
+    connect(currentLocationObject, &CurrentLocationObject::locationChanged,
+            this, &Canvas::on_currentLocationChanged);
+    connect(currentLocationObject, &CurrentLocationObject::locationChanged,
+            worldMapObject, &WorldMapObject::currentLocationChanged);
+
+    MonitorObject *monitorObject = new MonitorObject(m_settings);
+    monitorObject->setObjectName("monitorObject");
+    monitorObject->setPos( 0, static_cast<qreal>(geometry().height())
                  - m_settings->box().height - 3.0 * m_settings->box().border_width );
-    m_scene->addItem(obj);
+    monitorObject->setZValue(99);
+    m_scene->addItem(monitorObject);
+
+    connect(monitorObject, &MonitorObject::toLog,
+            m_log, &Log::saveToLog, Qt::QueuedConnection);
 }
 //==============================================================================
 void Canvas::on_actionAboutTriggered()
@@ -138,5 +167,19 @@ void Canvas::on_sceneRightClick(const QPoint &screenPos, const QPointF &scenePos
     Q_UNUSED(scenePos)
     emit toLog(tr("Canvas slot on_sceneRightClick()"), Log::LogDbg);
     m_menu.popup(screenPos);
+}
+//==============================================================================
+void Canvas::on_currentLocationChanged(const CurrentLocationStruct &currentLocation)
+{
+    emit toLog(tr("Canvas slot on_currentLocationChanged()"), Log::LogDbg);
+    CurrentLocationObject *currentLocationObject
+            = static_cast<CurrentLocationObject *>(sender());
+    if(currentLocationObject) {
+
+        qreal half = m_settings->map().current_dot_radius
+                + m_settings->map().current_dot_border;
+        currentLocationObject->setPos(currentLocation.point.x() - half,
+                                      currentLocation.point.y() - half);
+    }
 }
 //==============================================================================

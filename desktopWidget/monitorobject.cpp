@@ -34,7 +34,7 @@ MonitorObject::MonitorObject(Settings *settings)
 //==============================================================================
 MonitorObject::~MonitorObject()
 {
-
+    emit toLog(tr("MonitorObject Destructor"), Log::LogDbg);
 }
 //==============================================================================
 QRectF MonitorObject::boundingRect() const

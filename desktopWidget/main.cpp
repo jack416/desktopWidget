@@ -1,4 +1,5 @@
 #include <QApplication>
+#include <QObject>
 #include "AppCore"
 #include "canvas.h"
 //==================================================================================================
@@ -13,6 +14,7 @@ int main(int argc, char *argv[])
     }
 
     Canvas canvas;
+    QObject::connect(&canvas, &Canvas::quit, &a, &QApplication::quit, Qt::QueuedConnection);
     canvas.show();
 
     a.setQuitOnLastWindowClosed(true);
