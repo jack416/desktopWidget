@@ -26,15 +26,12 @@ protected:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
 
 private:
+    Settings *m_settings;
     bool m_altDotColor {false};
     int m_counter {-1};
     QRectF m_boundingRect;
     QTimer m_timer;
-    CommonStruct m_comm;
-    MapStruct m_map;
     CurrentLocationStruct m_curLoc;
-    QVector<CityStruct> m_miniCityVec;
-    QVector<CityStruct> m_cityVec;
 
     void updateCurrentLocation();
     void checkCurrentLocation();

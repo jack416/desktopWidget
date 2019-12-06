@@ -25,15 +25,11 @@ protected:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
 
 private:
+    Settings *m_settings;
     bool m_busy {false};
     int m_counter {0};
     QRectF m_boundingRect;
     QTimer m_timer;
-    ShadowStruct m_shadow;
-    BoxStruct m_box;
-    GaugeStruct m_gauge;
-    GraphStruct m_graph;
-    BulletStruct m_bullet;
     QVector<MonitorStruct> m_monVec;
 
     void updateValues();

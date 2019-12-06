@@ -17,7 +17,7 @@ public:
 
 signals:
     void toLog(const QString &text, nayk::Log::LogType logType = nayk::Log::LogInfo);
-    void rightClick(const QPoint &screenPos, const QPointF &scenePos);
+    void rightButtonClick(QPoint pos);
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event);

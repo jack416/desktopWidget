@@ -16,7 +16,6 @@ class Settings : public QObject
 public:
     explicit Settings(QObject *parent = nullptr);
     virtual ~Settings();
-    void initialize();
     QString appDir() const;
     QString profileDir() const;
     int displayNum() const;

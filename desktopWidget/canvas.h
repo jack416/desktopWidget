@@ -22,26 +22,35 @@ public:
 signals:
     void toLog(const QString &text, nayk::Log::LogType logType = nayk::Log::LogInfo);
     void quit();
+    void currentUtcLineChanged(const UtcLineStruct &utcLineStruct);
+    void nextUtcLineChanged(const UtcLineStruct &utcLineStruct);
 
 private:
     nayk::Log *m_log {nullptr};
     Settings *m_settings {nullptr};
     CustomScene *m_scene {nullptr};
+    QAction *actionOpenMap {nullptr};
     QMenu m_menu;
+    QTimer m_timer;
+    UtcLineStruct m_utcLine[2];
+    QPoint m_mouseCoord;
+    QPointF m_geoCoord;
 
     void setupMenu();
+    void updateUtcLongitude(bool saveLog = false);
+    void gotoYandexMap(QPointF p);
 
 protected:
     bool eventFilter(QObject *obj, QEvent *event);
 
 private slots:
+    void on_timerTimeOut();
     void on_settingsStartReading();
     void on_settingsFinishReading();
     void on_actionAboutTriggered();
     void on_actionOpenMapTriggered();
-    void on_sceneRightClick(const QPoint &screenPos, const QPointF &scenePos);
     void on_currentLocationChanged(const CurrentLocationStruct &currentLocation);
-
+    void on_sceneRightMouseClick(QPoint pos);
 };
 //==============================================================================
 #endif // CANVAS_H

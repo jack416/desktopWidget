@@ -78,6 +78,9 @@ bool drawText(QPainter* painter, QPointF pos, const QString &text,
               const QString &fontFace, qreal fontSize, qreal fontWeight, const QJsonArray &color,
               Qt::Alignment align = Qt::AlignLeft | Qt::AlignTop, const QJsonArray &shadowColor = QJsonArray(),
               qreal shadow_cx = 0, qreal shadow_cy = 0);
+QRectF textBoundingRect(QPainter* painter, const QString &text,
+                        const QString &fontFace, qreal fontSize, qreal fontWeight);
+
 
 QColor colorFromArray(const QJsonArray &arr);
 QColor colorFromArray(const QByteArray &arr);

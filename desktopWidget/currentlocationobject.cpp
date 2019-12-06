@@ -10,16 +10,12 @@ using namespace nayk;
 
 //==============================================================================
 CurrentLocationObject::CurrentLocationObject(Settings *settings)
+    : m_settings {settings}
 {
     setFlag(QGraphicsItem::ItemIgnoresTransformations);
 
-    m_comm = settings->common();
-    m_map = settings->map();
-    m_miniCityVec = settings->miniCityVec();
-    m_cityVec = settings->cityVec();
-    m_curLoc = settings->currentLocation();
-
-    qreal w = 2 * (m_map.current_dot_radius + m_map.current_dot_border);
+    m_curLoc = m_settings->currentLocation();
+    qreal w = 2 * (m_settings->map().current_dot_radius + m_settings->map().current_dot_border);
     m_boundingRect.setRect( 0, 0, w, w );
 
     connect(&m_timer, &QTimer::timeout, this, &CurrentLocationObject::on_timerTimeOut);
@@ -43,9 +39,9 @@ void CurrentLocationObject::paint(QPainter *painter,
     Q_UNUSED(option)
     Q_UNUSED(widget)
 
-    graph::drawCircle( painter, m_boundingRect.center(), m_map.current_dot_radius,
-                           (m_altDotColor ? m_map.current_alt_color : m_map.current_dot_color),
-                           m_map.current_border_color, m_map.current_dot_border
+    graph::drawCircle( painter, m_boundingRect.center(), m_settings->map().current_dot_radius,
+                           (m_altDotColor ? m_settings->map().current_alt_color : m_settings->map().current_dot_color),
+                           m_settings->map().current_border_color, m_settings->map().current_dot_border
                            );
 }
 //==============================================================================
@@ -54,7 +50,7 @@ void CurrentLocationObject::updateCurrentLocation()
     emit toLog(tr("Update current location"), Log::LogInfo);
 
     m_curLoc.ip = "";
-    QString par = "?access_key=" + m_comm.api_key +
+    QString par = "?access_key=" + m_settings->common().api_key +
             "&language=ru&output=json&fields=ip,city,latitude,longitude,country_name";
     QString url = "http://api.ipapi.com/";
 
@@ -98,14 +94,16 @@ void CurrentLocationObject::updateCurrentLocation()
     }
 
     m_curLoc.point = geo::coordGeoToMap( m_curLoc.lat, m_curLoc.lon,
-                                         m_map.map_width, m_map.map_cx, m_map.map_cy );
+                                         m_settings->map().map_width,
+                                         m_settings->map().map_cx,
+                                         m_settings->map().map_cy );
 }
 //==============================================================================
 void CurrentLocationObject::checkCurrentLocation()
 {
     emit toLog(tr("Check current location in cities list"), Log::LogInfo);
 
-    for(const CityStruct &city: m_cityVec) {
+    for(const CityStruct &city: m_settings->cityVec()) {
 
         if(isEqualPoints(city.point, m_curLoc.point)) {
 
@@ -115,7 +113,7 @@ void CurrentLocationObject::checkCurrentLocation()
         }
     }
 
-    for(const CityStruct &city: m_miniCityVec) {
+    for(const CityStruct &city: m_settings->miniCityVec()) {
 
         if(isEqualPoints(city.point, m_curLoc.point)) {
 
@@ -128,7 +126,7 @@ void CurrentLocationObject::checkCurrentLocation()
 //==============================================================================
 void CurrentLocationObject::on_timerTimeOut()
 {
-    if(++m_counter % m_comm.update_current_sec == 0) {
+    if(++m_counter % m_settings->common().update_current_sec == 0) {
 
         updateCurrentLocation();
         checkCurrentLocation();

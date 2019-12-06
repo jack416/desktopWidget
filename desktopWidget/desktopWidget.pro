@@ -16,6 +16,7 @@ SOURCES += \
     main.cpp \
     monitorobject.cpp \
     settings.cpp \
+    utclineobject.cpp \
     worldmapobject.cpp
 
 HEADERS += \
@@ -25,6 +26,7 @@ HEADERS += \
     customscene.h \
     monitorobject.h \
     settings.h \
+    utclineobject.h \
     worldmapobject.h
 
 # Output dir ===================================================================

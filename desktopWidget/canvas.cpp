@@ -1,6 +1,7 @@
 #include <QtMath>
 #include <QDesktopServices>
 #include <QPainter>
+#include <QMouseEvent>
 //
 #include "AppCore"
 #include "FileSys"
@@ -11,10 +12,11 @@
 #include "GuiUtils"
 //
 #include "canvas.h"
+#include "common.h"
 #include "monitorobject.h"
 #include "worldmapobject.h"
 #include "currentlocationobject.h"
-
+#include "utclineobject.h"
 //==============================================================================
 
 using namespace nayk;
@@ -33,8 +35,6 @@ Canvas::Canvas(QWidget *parent)
 
     m_log = new Log(this);
     connect(this, &Canvas::toLog, m_log, &Log::saveToLog, Qt::QueuedConnection);
-    emit toLog(tr("Delete old log files"), Log::LogDbg);
-    m_log->deleteOldLogFiles();
 
     m_settings = new Settings(this);
     connect(m_settings, &Settings::toLog, m_log, &Log::saveToLog, Qt::QueuedConnection);
@@ -45,7 +45,11 @@ Canvas::Canvas(QWidget *parent)
     m_scene = new CustomScene(this);
     setScene(m_scene);
     connect(m_scene, &CustomScene::toLog, m_log, &Log::saveToLog, Qt::QueuedConnection);
-    connect(m_scene, &CustomScene::rightClick, this, &Canvas::on_sceneRightClick);
+    connect(m_scene, &CustomScene::rightButtonClick, this, &Canvas::on_sceneRightMouseClick);
+
+    m_timer.setInterval(15000);
+    m_timer.setSingleShot(false);
+    connect(&m_timer, &QTimer::timeout, this, &Canvas::on_timerTimeOut);
 
     setupMenu();
     installEventFilter(this);
@@ -67,12 +71,88 @@ Canvas::~Canvas()
 //==============================================================================
 void Canvas::setupMenu()
 {
-    m_menu.addAction( tr("Open Map"), this, &Canvas::on_actionOpenMapTriggered );
+    actionOpenMap = new QAction(tr("OpenMap"), this);
+    connect(actionOpenMap, &QAction::triggered, this, &Canvas::on_actionOpenMapTriggered);
+    m_menu.addAction(actionOpenMap);
     m_menu.addSeparator();
     m_menu.addAction( tr("Reload settings"), m_settings, &Settings::reloadSettings );
     m_menu.addAction( tr("About"), this, &Canvas::on_actionAboutTriggered );
     m_menu.addSeparator();
     m_menu.addAction( tr("Exit"), this, &Canvas::quit );
+}
+//==============================================================================
+void Canvas::updateUtcLongitude(bool saveLog)
+{
+    if(saveLog)
+        emit toLog(tr("Update current 00:00 UTC position"), Log::LogInfo);
+
+    constexpr qreal minuteDeg = 360.0 / (24.0 * 60.0);
+    QDateTime utcDateTime = QDateTime::currentDateTimeUtc();
+    QDateTime currentUtc = utcDateTime;
+    currentUtc.setTime( QTime(0, 0) );
+    QDateTime nextUtc = currentUtc.addDays(1);
+
+    m_utcLine[0].minute_offset = static_cast<qreal>(utcDateTime.secsTo( currentUtc )) / 60.0;
+    m_utcLine[0].lon = m_utcLine[0].minute_offset * minuteDeg;
+
+    QPointF point = geo::coordGeoToMap( 0.0, m_utcLine[0].lon,
+            m_settings->map().map_width,
+            m_settings->map().map_cx, m_settings->map().map_cy );
+    m_utcLine[0].x = point.x();
+    m_utcLine[0].date = currentUtc.date();
+
+    m_utcLine[1].minute_offset = static_cast<qreal>(utcDateTime.secsTo( nextUtc )) / 60.0;
+    m_utcLine[1].lon = m_utcLine[1].minute_offset * minuteDeg;
+
+    point = geo::coordGeoToMap( 0.0, m_utcLine[1].lon,
+            m_settings->map().map_width,
+            m_settings->map().map_cx, m_settings->map().map_cy );
+    m_utcLine[1].x = point.x();
+    m_utcLine[1].date = nextUtc.date();
+
+    emit currentUtcLineChanged(m_utcLine[0]);
+    emit nextUtcLineChanged(m_utcLine[1]);
+
+    for(auto item:  m_scene->items()) {
+
+        QGraphicsObject *obj = static_cast<QGraphicsObject *>(item);
+        if(!obj) continue;
+
+        if(obj->objectName() == "utcLineObject0") {
+            obj->setPos( m_utcLine[0].x, 20.0 );
+        }
+        if(obj->objectName() == "utcLineObject1") {
+            obj->setPos( m_utcLine[1].x, 20.0 );
+        }
+
+        if(saveLog)
+            emit toLog(tr("Find object %1").arg(obj->objectName()), Log::LogDbg);
+    }
+
+    if(saveLog) {
+        emit toLog(tr("date_time=%1, minutes_offset=%2, "
+                      "one_minute_deg=%3, longitude=%4, map_x=%5")
+                   .arg(utcDateTime.toString("yyyy-MM-dd_HH:mm:ss"))
+                   .arg(m_utcLine[0].minute_offset)
+                   .arg(minuteDeg)
+                   .arg(m_utcLine[0].lon)
+                   .arg(m_utcLine[0].x), Log::LogDbg);
+        emit toLog(tr("date_time=%1, minutes_offset=%2, "
+                      "one_minute_deg=%3, longitude=%4, map_x=%5")
+                   .arg(utcDateTime.toString("yyyy-MM-dd_HH:mm:ss"))
+                   .arg(m_utcLine[1].minute_offset)
+                   .arg(minuteDeg)
+                   .arg(m_utcLine[1].lon)
+                   .arg(m_utcLine[1].x), Log::LogDbg);
+    }
+}
+//==============================================================================
+void Canvas::gotoYandexMap(QPointF p)
+{
+    QString url = "https://maps.yandex.ru/?ll=" + convert::doubleToStr(p.x(), 6)
+            + "%2C" + convert::doubleToStr(p.y(), 6) + "&z=7&l=map";
+    QDesktopServices::openUrl( QUrl(url) );
+    emit toLog( url, Log::LogOut );
 }
 //==============================================================================
 bool Canvas::eventFilter(QObject *obj, QEvent *event)
@@ -95,15 +175,53 @@ bool Canvas::eventFilter(QObject *obj, QEvent *event)
         emit toLog(tr("KeyPress event"), Log::LogDbg);
         return true;
     }
+    else if (event->type() == QEvent::MouseButtonRelease) {
+        QMouseEvent *mEvent = static_cast<QMouseEvent *>(event);
+        emit toLog(tr("MouseButtonRelease event"), Log::LogDbg);
+        m_mouseCoord = mEvent->pos();
+
+        if(mEvent->button() == Qt::RightButton) {
+            m_geoCoord = geo::coordMapToGeo( m_mouseCoord.x(), m_mouseCoord.y(),
+                                            m_settings->map().map_width,
+                                            m_settings->map().map_cx,
+                                            m_settings->map().map_cy );
+            actionOpenMap->setText(tr("Open map (lat: %1, lon: %2)")
+                                   .arg(convert::doubleToStr(m_geoCoord.y(),6))
+                                   .arg(convert::doubleToStr(m_geoCoord.x(),6))
+                                   );
+            m_menu.popup(m_mouseCoord);
+        }
+        return true;
+    }
+    else if (event->type() == QEvent::MouseButtonDblClick) {
+        QMouseEvent *mEvent = static_cast<QMouseEvent *>(event);
+        emit toLog(tr("MouseButtonDblClick event"), Log::LogDbg);
+        m_mouseCoord = mEvent->pos();
+
+        if(mEvent->button() == Qt::LeftButton) {
+            m_geoCoord = geo::coordMapToGeo( m_mouseCoord.x(), m_mouseCoord.y(),
+                                            m_settings->map().map_width,
+                                            m_settings->map().map_cx,
+                                            m_settings->map().map_cy );
+            gotoYandexMap(m_geoCoord);
+        }
+        return true;
+    }
     else {
         return QObject::eventFilter(obj, event);
     }
 }
 //==============================================================================
+void Canvas::on_timerTimeOut()
+{
+    updateUtcLongitude();
+}
+//==============================================================================
 void Canvas::on_settingsStartReading()
 {
     emit toLog(tr("Canvas slot on_settingsStartReading()"), Log::LogDbg);
-
+    m_timer.stop();
+    m_scene->clear();
 }
 //==============================================================================
 void Canvas::on_settingsFinishReading()
@@ -111,6 +229,8 @@ void Canvas::on_settingsFinishReading()
     emit toLog(tr("Canvas slot on_settingsFinishReading()"), Log::LogDbg);
 
     m_log->setDebugSave(m_settings->debug());
+    m_log->deleteOldLogFiles();
+
     m_scene->clear();
     setFixedSize( m_settings->screenGeometry().width(),
                   m_settings->screenGeometry().height() );
@@ -126,10 +246,27 @@ void Canvas::on_settingsFinishReading()
     connect(worldMapObject, &WorldMapObject::toLog,
             m_log, &Log::saveToLog, Qt::QueuedConnection);
 
+    for(int i=0; i<2; ++i) {
+
+        m_utcLine[i] = m_settings->utcLine();
+        UtcLineObject *utcLineObject = new UtcLineObject(m_settings);
+        utcLineObject->setObjectName(QString("utcLineObject%1").arg(i));
+        utcLineObject->setPos(0,0);
+        utcLineObject->setZValue(1);
+        m_scene->addItem(utcLineObject);
+
+        connect(utcLineObject, &UtcLineObject::toLog,
+                m_log, &Log::saveToLog, Qt::QueuedConnection);
+        if(i == 0)
+            connect(this, &Canvas::currentUtcLineChanged, utcLineObject, &UtcLineObject::utcLineChanged);
+        else
+            connect(this, &Canvas::nextUtcLineChanged, utcLineObject, &UtcLineObject::utcLineChanged);
+    }
+
     CurrentLocationObject *currentLocationObject = new CurrentLocationObject(m_settings);
     currentLocationObject->setObjectName("currentLocationObject");
     currentLocationObject->setPos(m_settings->currentLocation().point);
-    currentLocationObject->setZValue(1);
+    currentLocationObject->setZValue(10);
     m_scene->addItem(currentLocationObject);
 
     connect(currentLocationObject, &CurrentLocationObject::toLog,
@@ -148,6 +285,9 @@ void Canvas::on_settingsFinishReading()
 
     connect(monitorObject, &MonitorObject::toLog,
             m_log, &Log::saveToLog, Qt::QueuedConnection);
+
+    updateUtcLongitude(true);
+    m_timer.start();
 }
 //==============================================================================
 void Canvas::on_actionAboutTriggered()
@@ -159,14 +299,7 @@ void Canvas::on_actionAboutTriggered()
 void Canvas::on_actionOpenMapTriggered()
 {
     emit toLog(tr("Canvas slot on_actionOpenMapTriggered()"), Log::LogDbg);
-
-}
-//==============================================================================
-void Canvas::on_sceneRightClick(const QPoint &screenPos, const QPointF &scenePos)
-{
-    Q_UNUSED(scenePos)
-    emit toLog(tr("Canvas slot on_sceneRightClick()"), Log::LogDbg);
-    m_menu.popup(screenPos);
+    gotoYandexMap(m_geoCoord);
 }
 //==============================================================================
 void Canvas::on_currentLocationChanged(const CurrentLocationStruct &currentLocation)
@@ -181,5 +314,19 @@ void Canvas::on_currentLocationChanged(const CurrentLocationStruct &currentLocat
         currentLocationObject->setPos(currentLocation.point.x() - half,
                                       currentLocation.point.y() - half);
     }
+}
+//==============================================================================
+void Canvas::on_sceneRightMouseClick(QPoint pos)
+{
+    m_mouseCoord = pos;
+    m_geoCoord = geo::coordMapToGeo( m_mouseCoord.x(), m_mouseCoord.y(),
+                                    m_settings->map().map_width,
+                                    m_settings->map().map_cx,
+                                    m_settings->map().map_cy );
+    actionOpenMap->setText(tr("Open map (lat: %1, lon: %2)")
+                           .arg(convert::doubleToStr(m_geoCoord.y(),6))
+                           .arg(convert::doubleToStr(m_geoCoord.x(),6))
+                           );
+    m_menu.popup(m_mouseCoord);
 }
 //==============================================================================

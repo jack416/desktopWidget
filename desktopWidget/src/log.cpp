@@ -93,14 +93,22 @@ Log::LogType Log::strToLogType(const QString &typeStr)
 //==============================================================================
 void Log::deleteOldLogFiles(const QString &fileMask, int maxCount)
 {
+    saveToLog(tr("Delete old files from %1, fileMask = %2, max count = %3")
+              .arg(m_logDir).arg(fileMask).arg(maxCount), Log::LogDbg);
     QDir dir(m_logDir);
     QStringList list = dir.entryList(QStringList(fileMask),
                                      QDir::Files | QDir::NoSymLinks);
-    list.sort();
+    saveToLog(tr("Files count = %1").arg(list.size()), LogDbg);
 
     while(list.size() > maxCount) {
 
-        QFile::remove( list.takeFirst() );
+        QString fileName = list.takeFirst();
+        if(QFile::remove( m_logDir + fileName )) {
+            saveToLog(tr("Delete file %1").arg(fileName), Log::LogDbg);
+        }
+        else {
+            saveToLog(tr("File %1 not delete").arg(fileName), Log::LogDbg);
+        }
     }
 }
 //==============================================================================

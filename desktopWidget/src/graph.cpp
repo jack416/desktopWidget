@@ -273,6 +273,18 @@ QColor colorFromArray(const QVector<quint8> &arr)
 
     return QColor(r, g, b, a);
 }
+//==============================================================================
+QRectF textBoundingRect(QPainter* painter, const QString &text, const QString &fontFace,
+                        qreal fontSize, qreal fontWeight)
+{
+    QFont font = painter->font();
+    font.setFamily( fontFace );
+    font.setPointSizeF( fontSize );
+    font.setWeight( qRound( fontWeight * 100 ) );
+    painter->setFont(font);
+
+    return painter->boundingRect( QRect(0,0,10000,10000), text );
+}
 
 } // namespace graph //=========================================================
 

@@ -198,11 +198,12 @@ typedef struct GraphStruct
 //==============================================================================
 typedef struct UtcLineStruct
 {
-    qreal lon[2] {0, 0};
-    qreal minute_offset[2] {0, 0};
-    qreal x[2] {0, 0};
+    qreal lon {0};
+    qreal minute_offset {0};
+    qreal x {0};
     qreal line_width {0.5};
     QColor line_color;
+    QDate date;
 
 } UtcLineStruct;
 //==============================================================================

@@ -25,11 +25,7 @@ void CustomScene::mousePressEvent(QGraphicsSceneMouseEvent *event)
                .arg(event->screenPos().x())
                .arg(event->screenPos().y()),
                Log::LogDbg);
-
-    if(event->button() == Qt::RightButton) {
-
-        emit toLog(tr("Right Mouse Button click"), Log::LogDbg);
-        emit rightClick(event->screenPos(), event->scenePos());
-    }
+    if(event->button() == Qt::RightButton)
+        emit rightButtonClick(event->screenPos());
 }
 //==============================================================================
