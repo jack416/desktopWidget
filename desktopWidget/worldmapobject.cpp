@@ -15,8 +15,8 @@ WorldMapObject::WorldMapObject(Settings *settings)
 
     m_curLoc = settings->currentLocation();
     m_boundingRect.setRect( 0, 0,
-                            m_settings->screenGeometry().width(),
-                            m_settings->screenGeometry().height());
+                            m_settings->bg().rect.width(),
+                            m_settings->bg().rect.height() );
 }
 //==============================================================================
 WorldMapObject::~WorldMapObject()
