@@ -92,7 +92,7 @@ void WorldMapObject::drawCurrentLocation(QPainter *painter)
 {
     QPen linePen( QBrush( m_settings->map().line_color ), m_settings->map().line_width);
 
-    qreal cy = 50.0;
+    constexpr qreal cy = 50.0;
     constexpr qreal cx = 50.0;
 
     painter->setPen( linePen );
@@ -108,18 +108,15 @@ void WorldMapObject::drawCurrentLocation(QPainter *painter)
 
     drawText(painter, x, y, m_curLoc.city, m_settings->map().currentFont, Qt::AlignBottom);
 
-    x = m_settings->screenGeometry().width() - 120.0;
-    y = m_curLoc.point.y() + 14;
-    cy = m_settings->map().infoFont.size + 4;
+    x = m_settings->screenGeometry().width() - 128.0;
+    y = m_curLoc.point.y() + 14.0;
 
-    drawText(painter, x, y, m_curLoc.ip, m_settings->map().infoFont);
-    y += cy;
-    drawText(painter, x, y, m_curLoc.country, m_settings->map().infoFont);
-    y += cy;
-    drawText(painter, x, y, m_curLoc.city, m_settings->map().infoFont);
-    y += cy;
-    drawText(painter, x, y, QString("lat = %1").arg(m_curLoc.lat), m_settings->map().infoFont );
-    y += cy;
-    drawText(painter, x, y, QString("lon = %1").arg(m_curLoc.lon), m_settings->map().infoFont );
+    drawText(painter, x, y,
+             QString("%1\n%2\n%3\nlat = %4\nlon = %5")
+             .arg(m_curLoc.ip)
+             .arg(m_curLoc.country)
+             .arg(m_curLoc.city)
+             .arg(m_curLoc.lat)
+             .arg(m_curLoc.lon), m_settings->map().infoFont);
 }
 //==============================================================================

@@ -17,6 +17,7 @@
 #include "worldmapobject.h"
 #include "currentlocationobject.h"
 #include "utclineobject.h"
+#include "utctextobject.h"
 //==============================================================================
 
 using namespace nayk;
@@ -81,38 +82,45 @@ void Canvas::setupMenu()
     m_menu.addAction( tr("Exit"), this, &Canvas::quit );
 }
 //==============================================================================
+void Canvas::calcUtcLine(QDateTime curTime, QDateTime zeroTime,
+                         UtcLineStruct &utcLine, bool saveLog)
+{
+    constexpr qreal minuteDeg = 360.0 / (24.0 * 60.0);
+    utcLine.minute_offset = static_cast<qreal>(curTime.secsTo( zeroTime )) / 60.0;
+    utcLine.lon = utcLine.minute_offset * minuteDeg;
+
+    QPointF point = geo::coordGeoToMap( 0.0, utcLine.lon,
+            m_settings->map().map_width,
+            m_settings->map().map_cx, m_settings->map().map_cy );
+    utcLine.x = point.x();
+    utcLine.date = zeroTime.date();
+
+    if(saveLog) {
+        emit toLog(tr("date_time=%1, zero_date=%2, minutes_offset=%3, "
+                      "longitude=%4, map_x=%5")
+                   .arg(curTime.toString("yyyy-MM-dd_HH:mm:ss"))
+                   .arg(utcLine.date.toString("yyyy-MM-dd"))
+                   .arg(utcLine.minute_offset)
+                   .arg(utcLine.lon)
+                   .arg(utcLine.x), Log::LogDbg);
+    }
+}
+//==============================================================================
 void Canvas::updateUtcLongitude(bool saveLog)
 {
     if(saveLog)
         emit toLog(tr("Update current 00:00 UTC position"), Log::LogInfo);
 
-    constexpr qreal minuteDeg = 360.0 / (24.0 * 60.0);
     QDateTime utcDateTime = QDateTime::currentDateTimeUtc();
-    QDateTime currentUtc = utcDateTime;
-    currentUtc.setTime( QTime(0, 0) );
-    QDateTime nextUtc = currentUtc.addDays(1);
+    QDateTime zeroUtc = utcDateTime;
+    zeroUtc.setTime( QTime(0, 0) );
 
-    m_utcLine[0].minute_offset = static_cast<qreal>(utcDateTime.secsTo( currentUtc )) / 60.0;
-    m_utcLine[0].lon = m_utcLine[0].minute_offset * minuteDeg;
+    calcUtcLine(utcDateTime, zeroUtc, m_utcLine[0]);
+    calcUtcLine(utcDateTime, zeroUtc.addDays(1), m_utcLine[1]);
+    emit utcDataChanged0(m_utcLine[0].date, m_utcLine[0].lon);
+    emit utcDataChanged1(m_utcLine[1].date, m_utcLine[1].lon);
 
-    QPointF point = geo::coordGeoToMap( 0.0, m_utcLine[0].lon,
-            m_settings->map().map_width,
-            m_settings->map().map_cx, m_settings->map().map_cy );
-    m_utcLine[0].x = point.x();
-    m_utcLine[0].date = currentUtc.date();
-
-    m_utcLine[1].minute_offset = static_cast<qreal>(utcDateTime.secsTo( nextUtc )) / 60.0;
-    m_utcLine[1].lon = m_utcLine[1].minute_offset * minuteDeg;
-
-    point = geo::coordGeoToMap( 0.0, m_utcLine[1].lon,
-            m_settings->map().map_width,
-            m_settings->map().map_cx, m_settings->map().map_cy );
-    m_utcLine[1].x = point.x();
-    m_utcLine[1].date = nextUtc.date();
-
-    emit currentUtcLineChanged(m_utcLine[0]);
-    emit nextUtcLineChanged(m_utcLine[1]);
-
+    qreal y = m_settings->screenGeometry().height() - m_settings->box().height - 40.0;
     for(auto item:  m_scene->items()) {
 
         QGraphicsObject *obj = static_cast<QGraphicsObject *>(item);
@@ -121,29 +129,18 @@ void Canvas::updateUtcLongitude(bool saveLog)
         if(obj->objectName() == "utcLineObject0") {
             obj->setPos( m_utcLine[0].x, 20.0 );
         }
-        if(obj->objectName() == "utcLineObject1") {
+        else if(obj->objectName() == "utcLineObject1") {
             obj->setPos( m_utcLine[1].x, 20.0 );
+        }
+        else if(obj->objectName() == "utcTextObject0") {
+            obj->setPos( m_utcLine[0].x + 10.0, y );
+        }
+        else if(obj->objectName() == "utcTextObject1") {
+            obj->setPos( m_utcLine[1].x + 10.0, y );
         }
 
         if(saveLog)
             emit toLog(tr("Find object %1").arg(obj->objectName()), Log::LogDbg);
-    }
-
-    if(saveLog) {
-        emit toLog(tr("date_time=%1, minutes_offset=%2, "
-                      "one_minute_deg=%3, longitude=%4, map_x=%5")
-                   .arg(utcDateTime.toString("yyyy-MM-dd_HH:mm:ss"))
-                   .arg(m_utcLine[0].minute_offset)
-                   .arg(minuteDeg)
-                   .arg(m_utcLine[0].lon)
-                   .arg(m_utcLine[0].x), Log::LogDbg);
-        emit toLog(tr("date_time=%1, minutes_offset=%2, "
-                      "one_minute_deg=%3, longitude=%4, map_x=%5")
-                   .arg(utcDateTime.toString("yyyy-MM-dd_HH:mm:ss"))
-                   .arg(m_utcLine[1].minute_offset)
-                   .arg(minuteDeg)
-                   .arg(m_utcLine[1].lon)
-                   .arg(m_utcLine[1].x), Log::LogDbg);
     }
 }
 //==============================================================================
@@ -257,10 +254,20 @@ void Canvas::on_settingsFinishReading()
 
         connect(utcLineObject, &UtcLineObject::toLog,
                 m_log, &Log::saveToLog, Qt::QueuedConnection);
+
+        UtcTextObject *utcTextObject = new UtcTextObject(m_settings);
+        utcTextObject->setObjectName(QString("utcTextObject%1").arg(i));
+        utcTextObject->setPos(0,0);
+        utcTextObject->setZValue(2);
+        m_scene->addItem(utcTextObject);
+
+        connect(utcTextObject, &UtcTextObject::toLog,
+                m_log, &Log::saveToLog, Qt::QueuedConnection);
+
         if(i == 0)
-            connect(this, &Canvas::currentUtcLineChanged, utcLineObject, &UtcLineObject::utcLineChanged);
+            connect(this, &Canvas::utcDataChanged0, utcTextObject, &UtcTextObject::dataChanged);
         else
-            connect(this, &Canvas::nextUtcLineChanged, utcLineObject, &UtcLineObject::utcLineChanged);
+            connect(this, &Canvas::utcDataChanged1, utcTextObject, &UtcTextObject::dataChanged);
     }
 
     CurrentLocationObject *currentLocationObject = new CurrentLocationObject(m_settings);

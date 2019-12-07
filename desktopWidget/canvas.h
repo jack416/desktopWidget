@@ -22,8 +22,8 @@ public:
 signals:
     void toLog(const QString &text, nayk::Log::LogType logType = nayk::Log::LogInfo);
     void quit();
-    void currentUtcLineChanged(const UtcLineStruct &utcLineStruct);
-    void nextUtcLineChanged(const UtcLineStruct &utcLineStruct);
+    void utcDataChanged0(QDate date, qreal longitude);
+    void utcDataChanged1(QDate date, qreal longitude);
 
 private:
     nayk::Log *m_log {nullptr};
@@ -37,6 +37,7 @@ private:
     QPointF m_geoCoord;
 
     void setupMenu();
+    void calcUtcLine(QDateTime curTime, QDateTime zeroTime, UtcLineStruct &utcLine, bool saveLog = false);
     void updateUtcLongitude(bool saveLog = false);
     void gotoYandexMap(QPointF p);
 
